@@ -1,23 +1,18 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import {
   FileJson,
   Upload,
   Download,
   Settings,
   Share2,
-  Wand2,
-  Repeat,
   Undo2,
   Redo2,
-  Code,
+  Braces,
   Sparkles,
   PanelRightOpen,
   PanelRightClose,
-  Braces,
-  Eye,
-  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -34,7 +29,7 @@ import { WelcomeScreen } from '@/components/dashboard/WelcomeScreen'
 import { ExportDialog } from '@/components/export/ExportDialog'
 import { ShareDialog } from '@/components/share/ShareDialog'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
-import { ConvertDialog } from '@/components/conversions/ConvertDialog'
+import { SplitPane } from './SplitPane'
 import { useStore } from '@/stores/useStore'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
@@ -52,17 +47,13 @@ export function MainPanel() {
     isSettingsOpen,
     isExportOpen,
     isShareOpen,
-    isConvertOpen,
     setSettingsOpen,
     setExportOpen,
     setShareOpen,
-    setConvertOpen,
   } = useStore()
 
   const { undo, redo, canUndo, canRedo } = useHistoryStore()
 
-  const [showGraph, setShowGraph] = useState(true)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleMenuAction = useCallback(
@@ -77,21 +68,12 @@ export function MainPanel() {
         case 'export':
           setExportOpen(true)
           break
-        case 'settings':
-          setSettingsOpen(true)
-          break
-        case 'analyze':
-          analyzeJson(jsonInput, setToast)
-          break
-        case 'convert':
-          setConvertOpen(true)
-          break
         case 'share':
           setShareOpen(true)
           break
       }
     },
-    [newProject, jsonInput, setExportOpen, setSettingsOpen, setConvertOpen, setShareOpen]
+    [newProject, setExportOpen, setShareOpen]
   )
 
   const handleFileImport = useCallback(
@@ -132,7 +114,7 @@ export function MainPanel() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 text-xs gap-1">
-                  File <ChevronDown size={10} />
+                  File <Sparkles size={10} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40">
@@ -154,27 +136,6 @@ export function MainPanel() {
 
             <Separator orientation="vertical" className="h-5 mx-1" />
 
-            <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5">
-              <Button
-                variant={showGraph ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={() => setShowGraph(true)}
-              >
-                <Eye size={12} /> Graph
-              </Button>
-              <Button
-                variant={!showGraph ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={() => setShowGraph(false)}
-              >
-                <Code size={12} /> Code
-              </Button>
-            </div>
-
-            <Separator orientation="vertical" className="h-5 mx-1" />
-
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={!canUndo()}>
               <Undo2 size={13} />
             </Button>
@@ -190,12 +151,6 @@ export function MainPanel() {
           </div>
 
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleMenuAction('analyze')}>
-              <Wand2 size={12} /> Analyze
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleMenuAction('convert')}>
-              <Repeat size={12} /> Convert
-            </Button>
             <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleMenuAction('share')}>
               <Share2 size={12} /> Share
             </Button>
@@ -227,11 +182,13 @@ export function MainPanel() {
       ) : (
         <div className="flex-1 relative overflow-hidden">
           {jsonNode ? (
-            showGraph ? (
-              <GraphCanvas />
-            ) : (
-              <JsonEditor />
-            )
+            <SplitPane
+              left={<JsonEditor />}
+              right={<GraphCanvas />}
+              defaultLeftPercent={35}
+              minLeftPercent={20}
+              minRightPercent={25}
+            />
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -246,38 +203,6 @@ export function MainPanel() {
       <ExportDialog open={isExportOpen} onOpenChange={setExportOpen} />
       <ShareDialog open={isShareOpen} onOpenChange={setShareOpen} />
       <SettingsDialog open={isSettingsOpen} onOpenChange={setSettingsOpen} />
-      <ConvertDialog open={isConvertOpen} onOpenChange={setConvertOpen} />
-
-      {toast && (
-        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg border bg-background/95 backdrop-blur-xl px-4 py-3 shadow-lg animate-in">
-          <span className="text-sm">{toast.message}</span>
-          <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100 text-xs">✕</button>
-        </div>
-      )}
     </div>
-  )
-}
-
-function analyzeJson(jsonInput: string, setToast: (t: { message: string; type: 'success' | 'error' | 'info' }) => void) {
-  try {
-    const parsed = JSON.parse(jsonInput)
-    const type = typeof parsed
-    const isArray = Array.isArray(parsed)
-    const keys = isArray ? parsed.length : Object.keys(parsed).length
-    const depth = getDepth(parsed)
-    setToast({
-      message: `Valid JSON. Type: ${isArray ? 'array' : type}. Keys/Items: ${keys}. Depth: ${depth}.`,
-      type: 'success',
-    })
-  } catch {
-    setToast({ message: 'Invalid JSON. Check syntax.', type: 'error' })
-  }
-}
-
-function getDepth(obj: unknown, d = 0): number {
-  if (typeof obj !== 'object' || obj === null) return d
-  if (Array.isArray(obj)) return obj.reduce((max: number, v) => Math.max(max, getDepth(v, d + 1)), d as number)
-  return Object.values(obj as Record<string, unknown>).reduce(
-    (max: number, v) => Math.max(max, getDepth(v, d + 1)), d
   )
 }

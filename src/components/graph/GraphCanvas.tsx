@@ -14,53 +14,48 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useStore } from '@/stores/useStore'
 import { buildGraph } from '@/lib/graphUtils'
+import type { CardNodeData } from '@/lib/treeBuilder'
 
-const JsonGraphNode = dynamic(() => import('./JsonGraphNode'), { ssr: false })
-const nodeTypes = { jsonNode: JsonGraphNode } as NodeTypes
-
-const typeColorMap: Record<string, string> = {
-  object: '#3b82f6',
-  array: '#8b5cf6',
-  string: '#10b981',
-  number: '#f59e0b',
-  boolean: '#ef4444',
-  null: '#71717a',
-}
+const CardNode = dynamic(() => import('./CardNode'), { ssr: false })
+const nodeTypes = { cardNode: CardNode } as NodeTypes
 
 function GraphCanvasInner() {
   const jsonNode = useStore((s) => s.jsonNode)
   const collapsedPaths = useStore((s) => s.collapsedPaths)
-  const theme = useStore((s) => s.theme)
-  const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const { nodes, edges } = useMemo(
     () => (jsonNode ? buildGraph(jsonNode, collapsedPaths) : { nodes: [], edges: [] }),
     [jsonNode, collapsedPaths]
   )
 
+  const fitViewPadding = 0.12
+
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full" style={{ background: '#09090b' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.4 }}
+        fitViewOptions={{ padding: fitViewPadding }}
         minZoom={0.05}
         maxZoom={4}
         attributionPosition="bottom-left"
         defaultEdgeOptions={{
-          type: 'smoothstep',
-          style: { stroke: '#888', strokeWidth: 1.5, opacity: 0.3 },
+          type: 'default',
+          style: { stroke: '#555', strokeWidth: 1.5, opacity: 0.3 },
         }}
         proOptions={{ hideAttribution: true }}
+        panOnDrag={true}
+        zoomOnScroll={true}
+        selectNodesOnDrag={false}
+        nodesDraggable={true}
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="#888"
-          className="opacity-20"
+          gap={28}
+          size={1.5}
+          color="#333"
         />
         <Controls
           showInteractive={false}
@@ -68,16 +63,13 @@ function GraphCanvasInner() {
           className="!bg-background/90 !backdrop-blur-md !border !border-border !rounded-lg !shadow-sm"
         />
         <MiniMap
-          nodeStrokeWidth={2}
-          nodeStrokeColor={isDark ? '#555' : '#bbb'}
-          nodeColor={(n) => {
-            const t = (n.data as { type?: string })?.type ?? ''
-            return typeColorMap[t] ?? '#71717a'
-          }}
-          maskColor={isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)'}
+          nodeStrokeWidth={1}
+          nodeStrokeColor="#666"
+          nodeColor="#2a2a2a"
+          bgColor="#0a0a0a"
+          maskColor="rgba(59, 130, 246, 0.15)"
           style={{
-            background: isDark ? '#111' : '#f4f4f5',
-            border: `1px solid ${isDark ? '#333' : '#d4d4d8'}`,
+            border: '1px solid #333',
             borderRadius: '8px',
           }}
           className="!shadow-sm"

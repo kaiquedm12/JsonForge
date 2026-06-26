@@ -131,6 +131,19 @@ body,
   cursor: grabbing;
 }
 
+.jsonforge-card:hover {
+  box-shadow: 0 6px 28px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.3) !important;
+  border-color: #404040 !important;
+}
+
+.react-flow__edge-path {
+  stroke-dasharray: none;
+}
+
+.react-flow__background {
+  background: #09090b !important;
+}
+
 .react-flow__controls {
   box-shadow: none !important;
 }
@@ -161,14 +174,6 @@ body,
   background: var(--background) !important;
 }
 
-.monaco-editor .margin {
-  background: var(--background) !important;
-}
-
-.monaco-editor .monaco-editor-background {
-  background: var(--background) !important;
-}
-
 .glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
@@ -178,4 +183,57 @@ body,
 .dark .glass {
   background: rgba(0, 0, 0, 0.2);
   border-color: rgba(255, 255, 255, 0.05);
+}
+
+.split-pane-divider {
+  position: relative;
+  flex-shrink: 0;
+  cursor: col-resize;
+  width: 5px;
+  margin-left: -2px;
+  margin-right: -3px;
+  z-index: 10;
+}
+
+.split-pane-divider::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.split-pane-divider::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.split-pane-divider:hover::after,
+.split-pane-divider:active::after {
+  background: #3b82f6;
+}
+
+.react-flow__viewport {
+  z-index: 0;
+}
+
+.monaco-editor .monaco-editor-background {
+  background: var(--background) !important;
+}
+
+.monaco-editor .margin {
+  background: var(--background) !important;
+}
+
+.monaco-editor .line-numbers {
+  color: #52525b !important;
+}
+
+.monaco-editor .current-line ~ .line-numbers {
+  color: #a1a1aa !important;
 }

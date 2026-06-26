@@ -41,6 +41,8 @@ interface AppState {
   searchType: 'key' | 'value' | 'path'
   searchResults: string[]
   collapsedPaths: Set<string>
+  jsonError: string | null
+  formatTrigger: number
   sidebarOpen: boolean
   rightPanelOpen: boolean
   isComparing: boolean
@@ -69,6 +71,8 @@ interface AppState {
   setExportOpen: (open: boolean) => void
   setShareOpen: (open: boolean) => void
   setConvertOpen: (open: boolean) => void
+  setJsonError: (error: string | null) => void
+  triggerFormat: () => void
   startCompare: () => void
   setComparisonJson: (json: string) => void
   getGraphData: () => { nodes: any[]; edges: any[] }
@@ -92,6 +96,8 @@ export const useStore = create<AppState>()(
     searchType: 'key' as const,
     searchResults: [],
     collapsedPaths: new Set<string>(),
+    jsonError: null,
+    formatTrigger: 0,
     sidebarOpen: true,
     rightPanelOpen: false,
     isComparing: false,
@@ -130,7 +136,7 @@ export const useStore = create<AppState>()(
           jsonOutput: formatted,
           jsonNode: node,
           viewMode: 'editor',
-          rightPanelOpen: true,
+          rightPanelOpen: false,
           collapsedPaths: new Set<string>(),
           searchResults: [],
         })
@@ -140,13 +146,11 @@ export const useStore = create<AppState>()(
     },
 
     formatJson: () => {
-      const { jsonInput } = get()
-      try {
-        const formatted = formatJson(jsonInput)
-        set({ jsonInput: formatted, jsonOutput: formatted })
-        const history = useHistoryStore.getState()
-        history.pushState(formatted, 'Formatted', 'auto')
-      } catch {}
+      set({ formatTrigger: get().formatTrigger + 1 })
+    },
+
+    triggerFormat: () => {
+      set({ formatTrigger: get().formatTrigger + 1 })
     },
 
     minifyJson: () => {
@@ -192,6 +196,7 @@ export const useStore = create<AppState>()(
     setExportOpen: (open) => set({ isExportOpen: open }),
     setShareOpen: (open) => set({ isShareOpen: open }),
     setConvertOpen: (open) => set({ isConvertOpen: open }),
+    setJsonError: (error) => set({ jsonError: error }),
 
     startCompare: () => {
       set({ isComparing: true, comparisonJson: get().jsonInput })

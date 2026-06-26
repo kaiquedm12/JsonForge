@@ -1,20 +1,16 @@
 'use client'
 
 import { useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus,
   Upload,
   Download,
   History,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   FileJson,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/cn'
 import { useStore } from '@/stores/useStore'
 
 const menuItems = [
@@ -29,14 +25,7 @@ const bottomItems = [
 ]
 
 export function Sidebar() {
-  const {
-    sidebarOpen,
-    setSidebarOpen,
-    newProject,
-    setSettingsOpen,
-    setHistoryOpen,
-    setExportOpen,
-  } = useStore()
+  const { newProject, setSettingsOpen, setHistoryOpen, setExportOpen } = useStore()
 
   const handleFileImport = useCallback(() => {
     const input = document.createElement('input')
@@ -81,102 +70,39 @@ export function Sidebar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <motion.aside
-        initial={false}
-        animate={{ width: sidebarOpen ? 200 : 48 }}
-        transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className={cn(
-          'relative flex flex-col border-r border-border/60 bg-background/90 backdrop-blur-md h-full overflow-hidden shrink-0'
-        )}
-      >
-        <div className="flex items-center justify-between px-2.5 py-3 border-b border-border/30">
-          <AnimatePresence>
-            {sidebarOpen && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-2"
-              >
-                <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                  <FileJson size={12} className="text-white" />
-                </div>
-                <span className="text-xs font-semibold">JsonForge</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-6 w-6 shrink-0"
-          >
-            {sidebarOpen ? <ChevronLeft size={13} /> : <ChevronRight size={13} />}
-          </Button>
+      <aside className="flex flex-col border-r border-border/60 bg-background/90 backdrop-blur-md h-full overflow-hidden shrink-0 w-12">
+        <div className="flex items-center justify-center py-3 border-b border-border/30">
+          <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+            <FileJson size={12} className="text-white" />
+          </div>
         </div>
 
-        <div className="flex flex-col gap-0.5 p-1.5 flex-1">
+        <div className="flex flex-col items-center gap-0.5 p-1.5 flex-1">
           {menuItems.map((item) => (
-            <div key={item.id}>
-              {sidebarOpen ? (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2.5 text-xs h-8 px-2"
-                  onClick={() => handleAction(item.id)}
-                >
-                  <item.icon size={14} className="shrink-0" />
-                  <span>{item.label}</span>
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAction(item.id)}>
+                  <item.icon size={14} />
                 </Button>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-full h-8"
-                      onClick={() => handleAction(item.id)}
-                    >
-                      <item.icon size={14} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              )}
-            </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">{item.label}</TooltipContent>
+            </Tooltip>
           ))}
         </div>
 
-        <div className="border-t border-border/30 p-1.5">
+        <div className="border-t border-border/30 p-1.5 flex flex-col items-center gap-0.5">
           {bottomItems.map((item) => (
-            <div key={item.id}>
-              {sidebarOpen ? (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2.5 text-xs h-8 px-2"
-                  onClick={() => handleAction(item.id)}
-                >
-                  <item.icon size={14} className="shrink-0" />
-                  <span>{item.label}</span>
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAction(item.id)}>
+                  <item.icon size={14} />
                 </Button>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-full h-8"
-                      onClick={() => handleAction(item.id)}
-                    >
-                      <item.icon size={14} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              )}
-            </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">{item.label}</TooltipContent>
+            </Tooltip>
           ))}
         </div>
-      </motion.aside>
+      </aside>
     </TooltipProvider>
   )
 }
