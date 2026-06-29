@@ -1,21 +1,24 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Copy, Check } from 'lucide-react'
+import { X, Copy, Check, Shield, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 
-import type { JsonStats, SchemaResult } from '@/types'
+import type { JsonStats, SchemaResult, ValidationResult } from '@/types'
 import { useStore } from '@/stores/useStore'
 import { cn } from '@/lib/cn'
 import { formatFileSize } from '@/lib/statsUtils'
-import { useState } from 'react'
+import { validateJsonAgainstSchema } from '@/lib/schemaValidator'
 
 export function RightPanel() {
   const { panelView, setPanelView, rightPanelOpen, setRightPanelOpen, jsonNode, jsonInput, getStats, getSchemas } = useStore()
   const [copied, setCopied] = useState(false)
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
+  const [validationSchema, setValidationSchema] = useState('')
 
   const stats = useMemo(() => getStats(), [getStats])
   const schemas = useMemo(() => getSchemas(), [getSchemas])
@@ -25,6 +28,12 @@ export function RightPanel() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }, [jsonInput])
+
+  const handleValidate = useCallback(() => {
+    if (!validationSchema) return
+    const result = validateJsonAgainstSchema(jsonInput, validationSchema)
+    setValidationResult(result)
+  }, [jsonInput, validationSchema])
 
   return (
     <AnimatePresence>
@@ -50,11 +59,14 @@ export function RightPanel() {
               className="flex flex-col flex-1"
             >
               <div className="px-3 pt-2">
-                <TabsList className="w-full grid grid-cols-4 h-8">
+                <TabsList className="w-full grid grid-cols-5 h-8">
                   <TabsTrigger value="structure" className="text-[10px] px-0">Tree</TabsTrigger>
                   <TabsTrigger value="properties" className="text-[10px] px-0">Props</TabsTrigger>
                   <TabsTrigger value="stats" className="text-[10px] px-0">Stats</TabsTrigger>
                   <TabsTrigger value="schema" className="text-[10px] px-0">Schema</TabsTrigger>
+                  <TabsTrigger value="validation" className="text-[10px] px-0">
+                    <Shield size={10} />
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -69,12 +81,12 @@ export function RightPanel() {
                   >
                     {panelView === 'structure' && (
                       <div className="space-y-0.5">
-                        {jsonNode ? <TreeNode node={jsonNode} depth={0} /> : <EmptyState />}
+                        {jsonNode ? <TreeNode node={jsonNode as any} depth={0} /> : <EmptyState />}
                       </div>
                     )}
                     {panelView === 'properties' && (
-                      <div className="space-y-1">
-                        {jsonNode ? <PropertiesView /> : <EmptyState />}
+                      <div className="space-y-2">
+                        {jsonNode ? <PropertiesView node={jsonNode} /> : <EmptyState />}
                       </div>
                     )}
                     {panelView === 'stats' && (
@@ -85,6 +97,46 @@ export function RightPanel() {
                     {panelView === 'schema' && (
                       <div className="space-y-2">
                         {schemas ? <SchemaView schemas={schemas} /> : <EmptyState />}
+                      </div>
+                    )}
+                    {panelView === 'validation' && (
+                      <div className="space-y-3">
+                        <textarea
+                          className="w-full h-32 p-2 text-xs font-mono border rounded-md bg-muted"
+                          value={validationSchema}
+                          onChange={(e) => setValidationSchema(e.target.value)}
+                          placeholder="Cole o JSON Schema aqui..."
+                        />
+                        <Button size="sm" className="w-full" onClick={handleValidate} disabled={!validationSchema}>
+                          <Shield size={12} className="mr-1" />
+                          Validar
+                        </Button>
+                        {validationResult && (
+                          <div>
+                            {validationResult.valid ? (
+                              <div className="flex items-center gap-2 p-2 rounded bg-green-500/10 text-green-500 text-xs">
+                                <CheckCircle2 size={14} />
+                                JSON válido!
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 p-2 rounded bg-destructive/10 text-destructive text-xs">
+                                  <AlertCircle size={14} />
+                                  {validationResult.errors.length} erro(s)
+                                </div>
+                                {validationResult.errors.slice(0, 10).map((err, i) => (
+                                  <div key={i} className="p-2 rounded bg-destructive/5 text-xs">
+                                    <div className="flex gap-1 mb-1">
+                                      <Badge variant="outline" className="text-[10px] font-mono">{err.path}</Badge>
+                                      <Badge variant="secondary" className="text-[10px]">{err.keyword}</Badge>
+                                    </div>
+                                    <p className="text-muted-foreground">{err.message}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </motion.div>
@@ -113,16 +165,9 @@ function EmptyState() {
   )
 }
 
-interface TreeNodeData {
-  key: string | null
-  type: string
-  children: TreeNodeData[]
-  path: string
-}
-
-function TreeNode({ node, depth }: { node: TreeNodeData; depth: number }) {
+function TreeNode({ node, depth }: { node: any; depth: number }) {
   const [expanded, setExpanded] = useState(true)
-  const hasChildren = node.children.length > 0
+  const hasChildren = node.children && node.children.length > 0
 
   return (
     <div>
@@ -142,7 +187,7 @@ function TreeNode({ node, depth }: { node: TreeNodeData; depth: number }) {
       </button>
       {expanded && hasChildren && (
         <div>
-          {node.children.map((child, i: number) => (
+          {node.children.map((child: any, i: number) => (
             <TreeNode key={child.path || i} node={child} depth={depth + 1} />
           ))}
         </div>
@@ -151,10 +196,39 @@ function TreeNode({ node, depth }: { node: TreeNodeData; depth: number }) {
   )
 }
 
-function PropertiesView() {
+function PropertiesView({ node }: { node: any }) {
+  const props = useMemo(() => {
+    const result: { path: string; type: string; value: string }[] = []
+    function walk(n: any) {
+      if (n.type !== 'object' && n.type !== 'array') {
+        result.push({ path: n.path, type: n.type, value: String(n.value) })
+      }
+      for (const child of n.children || []) walk(child)
+    }
+    walk(node)
+    return result
+  }, [node])
+
+  if (props.length === 0) {
+    return <div className="text-xs text-muted-foreground text-center py-4">No leaf properties found</div>
+  }
+
   return (
-    <div className="text-xs text-muted-foreground text-center py-4">
-      Click a node in the graph to view its properties
+    <div className="space-y-1">
+      {props.slice(0, 100).map((prop, i) => (
+        <div key={i} className="p-2 rounded bg-muted/20 text-xs">
+          <div className="flex items-center gap-1 mb-0.5">
+            <code className="text-[10px] text-muted-foreground truncate">{prop.path}</code>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 ml-auto">{prop.type}</Badge>
+          </div>
+          <p className="text-foreground/80 truncate">{prop.value}</p>
+        </div>
+      ))}
+      {props.length > 100 && (
+        <p className="text-[10px] text-muted-foreground text-center">
+          +{props.length - 100} more properties
+        </p>
+      )}
     </div>
   )
 }
@@ -163,6 +237,10 @@ function StatsView({ stats }: { stats: JsonStats }) {
   const items = [
     { label: 'Objects', value: stats.totalObjects },
     { label: 'Arrays', value: stats.totalArrays },
+    { label: 'Strings', value: stats.totalStrings },
+    { label: 'Numbers', value: stats.totalNumbers },
+    { label: 'Booleans', value: stats.totalBooleans },
+    { label: 'Nulls', value: stats.totalNulls },
     { label: 'Properties', value: stats.totalProperties },
     { label: 'Max Depth', value: stats.maxDepth },
     { label: 'File Size', value: formatFileSize(stats.fileSize) },
@@ -201,7 +279,7 @@ function SchemaView({ schemas }: { schemas: SchemaResult }) {
 
   return (
     <div>
-      <div className="flex gap-1 mb-2">
+      <div className="flex gap-1 mb-2 flex-wrap">
         {Object.keys(labels).map((key) => (
           <button
             key={key}

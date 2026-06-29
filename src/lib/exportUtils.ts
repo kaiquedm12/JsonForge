@@ -88,7 +88,7 @@ export function compareJson(a: string, b: string): { added: string[]; removed: s
   }
 }
 
-function getAllKeys(obj: unknown, prefix = ''): string[] {
+export function getAllKeys(obj: unknown, prefix = ''): string[] {
   if (typeof obj !== 'object' || obj === null) return prefix ? [prefix] : []
   if (Array.isArray(obj)) {
     return obj.flatMap((v, i) => getAllKeys(v, `${prefix}[${i}]`))

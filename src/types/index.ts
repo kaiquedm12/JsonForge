@@ -62,6 +62,57 @@ export interface ConversionResult {
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
-export type PanelView = 'structure' | 'properties' | 'stats' | 'schema'
+export type PanelView = 'structure' | 'properties' | 'stats' | 'schema' | 'validation'
 
 export type ViewMode = 'dashboard' | 'editor'
+
+export interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
+}
+
+export interface ValidationError {
+  path: string
+  message: string
+  keyword: string
+}
+
+export interface AiSuggestion {
+  label: string
+  prompt: string
+}
+
+export interface QueryResult {
+  path: string
+  value: unknown
+}
+
+export interface PatchOperation {
+  op: 'add' | 'remove' | 'replace' | 'move' | 'copy' | 'test'
+  path: string
+  value?: unknown
+  from?: string
+}
+
+export interface TransformRule {
+  id: string
+  type: 'rename' | 'map' | 'filter' | 'sort' | 'pick' | 'omit'
+  config: Record<string, unknown>
+}
+
+export interface UserProfile {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+}
+
+export interface ProjectData {
+  id: string
+  name: string
+  json: string
+  createdAt: number
+  updatedAt: number
+}
+
+export type Locale = 'pt-BR' | 'en-US' | 'es'
